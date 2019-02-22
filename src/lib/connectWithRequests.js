@@ -45,7 +45,7 @@ export default function connectWithRequests<S>(
     return R.compose(
       withRequests(requestsDeclaration),
       // $FlowIgnore todo
-      connect(mapStateToPropsSelector, mapDispatchToProps, mergeProps, { withRef: true, ...options })
+      connect(mapStateToPropsSelector, mapDispatchToProps, mergeProps, { forwardRef: true, ...options })
     )(Component)
   }
 }
