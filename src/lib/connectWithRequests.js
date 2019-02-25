@@ -76,35 +76,17 @@ function withRequests<S>(requestsDeclaration: RequestsDeclarationType<S>) {
       componentDidMount() {
         const wrappedComponent = this.connectComponent //.getWrappedInstance()
 
-        if (wrappedComponent == null) {
-          // wrapped component is a function
-          const oldWillUpdate = this.connectComponent.componentWillUpdate
-          // $FlowIgnore
-          const { selector: { props } } = this.connectComponent
-
-          // $FlowIgnore
-          this.connectComponent.componentWillUpdate = (nextProps, nextState) => {
-            this._performRequestsIfNeeded(nextProps, nextState)
-            if (oldWillUpdate != null) {
-              oldWillUpdate.call(this.connectComponent, nextProps, nextState)
-            }
+        const oldWillUpdate = wrappedComponent.componentWillUpdate
+        // $FlowIgnore
+        wrappedComponent.componentWillUpdate = (nextProps, nextState) => {
+          this._performRequestsIfNeeded(nextProps, nextState)
+          if (oldWillUpdate != null) {
+            oldWillUpdate.call(wrappedComponent, nextProps, nextState)
           }
-          this._performRequestsIfNeeded(props, this.connectComponent.state)
-
-        } else {
-          // wrapped component is a class
-          const oldWillUpdate = wrappedComponent.componentWillUpdate
-          // $FlowIgnore
-          wrappedComponent.componentWillUpdate = (nextProps, nextState) => {
-            this._performRequestsIfNeeded(nextProps, nextState)
-            if (oldWillUpdate != null) {
-              oldWillUpdate.call(wrappedComponent, nextProps, nextState)
-            }
-          }
-          // $FlowIgnore flow bug
-          const state: S = wrappedComponent.state
-          this._performRequestsIfNeeded(wrappedComponent.props, state)
         }
+        // $FlowIgnore flow bug
+        const state: S = wrappedComponent.state
+        this._performRequestsIfNeeded(wrappedComponent.props, state)
       }
 
       componentWillUnmount() {
@@ -163,13 +145,8 @@ function withRequests<S>(requestsDeclaration: RequestsDeclarationType<S>) {
           const requestKey = `${this._requestsPrefix}-${key}`
           const wrappedComponent = this.connectComponent //.getWrappedInstance()
 
-          if (wrappedComponent != null) {
-            const { props, state } = wrappedComponent
-            dispatch({ ...actionCreator(props, state), requestKey })
-          } else {
-            const props = this.connectComponent.selector.props
-            dispatch({ ...actionCreator(props, null), requestKey })
-          }
+          const { props, state } = wrappedComponent
+          dispatch({ ...actionCreator(props, state), requestKey })
         } else {
           console.error(`Undefined request key '${requestKey}'`)
         }
