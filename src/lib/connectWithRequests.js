@@ -42,10 +42,15 @@ export default function connectWithRequests<S>(
       return result
     })
 
+    const mapDispatchToPropsWithDispatch = typeof mapDispatchToProps === 'function' ? (dispatch) => ({
+      ...mapDispatchToProps(dispatch),
+      dispatch
+    }) : null
+
     return R.compose(
       withRequests(requestsDeclaration),
       // $FlowIgnore todo
-      connect(mapStateToPropsSelector, mapDispatchToProps, mergeProps, { forwardRef: true, ...options })
+      connect(mapStateToPropsSelector, mapDispatchToPropsWithDispatch, mergeProps, { forwardRef: true, ...options })
     )(Component)
   }
 }
@@ -69,21 +74,22 @@ function withRequests<S>(requestsDeclaration: RequestsDeclarationType<S>) {
       }
 
       componentDidMount() {
-        const wrappedComponent = this.connectComponent.getWrappedInstance()
+        const wrappedComponent = this.connectComponent //.getWrappedInstance()
 
         if (wrappedComponent == null) {
           // wrapped component is a function
           const oldWillUpdate = this.connectComponent.componentWillUpdate
           // $FlowIgnore
           const { selector: { props } } = this.connectComponent
+
           // $FlowIgnore
           this.connectComponent.componentWillUpdate = (nextProps, nextState) => {
-            this._performRequestsIfNeeded(props, null)
+            this._performRequestsIfNeeded(nextProps, nextState)
             if (oldWillUpdate != null) {
               oldWillUpdate.call(this.connectComponent, nextProps, nextState)
             }
           }
-          this._performRequestsIfNeeded(props, null)
+          this._performRequestsIfNeeded(props, this.connectComponent.state)
 
         } else {
           // wrapped component is a class
@@ -103,7 +109,7 @@ function withRequests<S>(requestsDeclaration: RequestsDeclarationType<S>) {
 
       componentWillUnmount() {
         // $FlowIgnore
-        const { dispatch } = this.connectComponent.store
+        const { dispatch } = this.connectComponent.props
 
         const keysForClear = [
           ...requestsDeclaration.map(x => x.key),
@@ -117,7 +123,7 @@ function withRequests<S>(requestsDeclaration: RequestsDeclarationType<S>) {
 
       _performRequestsIfNeeded(props: HashType, state: ?S) {
         // $FlowIgnore
-        const { dispatch } = this.connectComponent.store
+        const { dispatch } = this.connectComponent.props
 
         requestsDeclaration.forEach((request) => {
           const { key, action: actionCreator, cacheKey: cacheKeyFn } = request
@@ -140,7 +146,7 @@ function withRequests<S>(requestsDeclaration: RequestsDeclarationType<S>) {
       @autobind
       dispatchRequest(action: RequestStartActionType) {
         // $FlowIgnore
-        const { dispatch } = this.connectComponent.store
+        const { dispatch } = this.connectComponent.props
 
         const fullKey = `${this._requestsPrefix}-${action.requestKey}`
         this._additionalKeys.push(action.requestKey)
@@ -153,9 +159,9 @@ function withRequests<S>(requestsDeclaration: RequestsDeclarationType<S>) {
         const request = requestsDeclaration.find(x => x.key === requestKey)
         if (request) {
           const { key, action: actionCreator } = request
-          const { dispatch } = this.connectComponent.store
+          const { dispatch } = this.connectComponent.props
           const requestKey = `${this._requestsPrefix}-${key}`
-          const wrappedComponent = this.connectComponent.getWrappedInstance()
+          const wrappedComponent = this.connectComponent //.getWrappedInstance()
 
           if (wrappedComponent != null) {
             const { props, state } = wrappedComponent
