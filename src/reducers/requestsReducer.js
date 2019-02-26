@@ -32,7 +32,7 @@ export const defaultResult: RequestResultType<any> = {
   data: undefined,
   failureError: null,
   dataError: null,
-  loading: false
+  loading: true
 }
 
 function mergeData<D: Object>(
